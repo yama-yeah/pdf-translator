@@ -1,0 +1,24 @@
+services:
+  translator:
+    path: ./translator/
+    restart: unless-stopped
+    volumes:
+      - ./translator/src/:/home/pdf-translator/
+    ports:
+      - 8765:8765
+    command: /bin/bash -c "python3 main.py"
+    deploy:
+      resources:
+        reservations:
+          devices:
+          - driver: nvidia
+            device_ids: ['0']
+            capabilities: [gpu]
+  bot:
+    path: ./bot/
+    restart: unless-stopped
+    volumes:
+      - ./bot/src/:/src
+    working_dir: /src/
+    
+    
