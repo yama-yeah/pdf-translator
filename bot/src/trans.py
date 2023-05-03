@@ -9,9 +9,10 @@ except Exception:
     subprocess.check_call(["python3", "-m", "pip", "install", "requests"])
     import requests
 
+import translator_status as translator_status
 
-TRANSLATE_URL = "http://localhost:8765/translate_pdf/"
-CLEAR_TEMP_URL = "http://localhost:8765/clear_temp_dir/"
+TRANSLATE_URL = "http://translator:8765/translate_pdf/"
+CLEAR_TEMP_URL = "http://translator:8765/clear_temp_dir/"
 
 
 def translate_request(input_pdf_path: Path, output_dir: Path) -> None:
@@ -37,7 +38,7 @@ def translate_request(input_pdf_path: Path, output_dir: Path) -> None:
         print(f"An error occurred: {response.status_code}")
 
 
-def main(args: argparse.Namespace) -> None:
+def main(args: argparse.Namespace) -> translator_status.TranslatorStatus:
     """Translates a PDF or all PDFs in a directory.
 
     Parameters
@@ -63,25 +64,31 @@ def main(args: argparse.Namespace) -> None:
 
     if args.input_pdf_path_or_dir.is_file():
         if args.input_pdf_path_or_dir.suffix != ".pdf":
-            raise ValueError(
-                f"Input file must be a PDF or directory: {args.input_pdf_path_or_dir}"
+            return translator_status.Error(
+                f"Input file must be a PDF: {args.input_pdf_path_or_dir}"
             )
-
         translate_request(args.input_pdf_path_or_dir, args.output_dir)
     elif args.input_pdf_path_or_dir.is_dir():
         input_pdf_paths = args.input_pdf_path_or_dir.glob("*.pdf")
 
         if not input_pdf_paths:
-            raise ValueError(f"Input directory is empty: {args.input_pdf_path_or_dir}")
+            return translator_status.Error(f"Input directory is empty: {args.input_pdf_path_or_dir}")
 
         for input_pdf_path in input_pdf_paths:
             translate_request(input_pdf_path, args.output_dir)
     else:
-        raise ValueError(
+        return translator_status.Error(
             f"Input path must be a file or directory: {args.input_pdf_path_or_dir}"
         )
 
-    print("Done.")
+    return translator_status.Success(args.output_dir.absolute().as_posix())
+
+def run(pdf_path:str)->translator_status.TranslatorStatus:
+    args = argparse.Namespace()
+    args.input_pdf_path_or_dir = Path(pdf_path)
+    args.output_dir = Path("./outputs")
+    status = main(args)
+    return status
 
 
 if __name__ == "__main__":
@@ -101,4 +108,4 @@ if __name__ == "__main__":
         help="Path to the directory where the translated PDFs will be saved. (default: ./outputs)",
     )
     args = parser.parse_args()
-    main(args)
+    #main(args)

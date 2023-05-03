@@ -1,12 +1,14 @@
+version: "2"
 services:
   translator:
-    path: ./translator/
+    build: ./translator/
     restart: unless-stopped
     volumes:
       - ./translator/src/:/home/pdf-translator/
     ports:
       - 8765:8765
-    command: /bin/bash -c "python3 main.py"
+    working_dir: /home/pdf-translator/
+    command: python3 main.py
     deploy:
       resources:
         reservations:
@@ -15,10 +17,14 @@ services:
             device_ids: ['0']
             capabilities: [gpu]
   bot:
-    path: ./bot/
+    build: ./bot/
     restart: unless-stopped
     volumes:
       - ./bot/src/:/src
     working_dir: /src/
+    links:
+      - "translator"
+    command: python3 run.py
     
+
     
